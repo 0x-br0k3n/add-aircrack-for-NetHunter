@@ -18,6 +18,7 @@ EXTRA_CFLAGS += -Wno-vla -g
 #endif
 
 EXTRA_CFLAGS += -I$(srctree)/$(src)/include
+EXTRA_CFLAGS += -I$(srctree)/$(src)/hal/phydm
 EXTRA_LDFLAGS += --strip-all -O3
 
 ########################## WIFI IC ############################
