@@ -645,8 +645,10 @@ void _iqk_tx_8812a(struct dm_struct *dm, u8 chnl_idx)
 	       *dm->band_width, dm->ext_pa_5g, dm->ext_pa);
 	RF_DBG(dm, DBG_RF_IQK, "Interface = %d, RFE_Type = %d\n",
 	       dm->support_interface, dm->rfe_type);
+#if 0
 	if (*dm->band_width == 2)
 		VDF_enable = true;
+#endif
 	VDF_enable = false;
 
 	odm_set_bb_reg(dm, R_0x82c, BIT(31), 0x0); /* [31] = 0 --> Page C */
@@ -1155,7 +1157,7 @@ void _phy_iq_calibrate_8812a(struct dm_struct *dm, u8 channel)
 
 void _phy_lc_calibrate_8812a(struct dm_struct *dm, boolean is2T)
 {
-	u32 /*rf_amode=0, rf_bmode=0,*/ lc_cal = 0, tmp = 0;
+	u32 /*rf_amode=0, rf_bmode=0,*/ lc_cal = 0, tmp = 0, cnt;
 
 	/* Check continuous TX and Packet TX */
 	u32 reg0x914 = odm_read_4byte(dm, REG_SINGLE_TONE_CONT_TX_JAGUAR);
@@ -1193,9 +1195,15 @@ void _phy_lc_calibrate_8812a(struct dm_struct *dm, boolean is2T)
 
 	/* 3 4. Set LC calibration begin bit15 */
 	odm_set_rf_reg(dm, RF_PATH_A, RF_CHNLBW, RFREGOFFSETMASK, lc_cal | 0x08000);
-
 	ODM_delay_ms(150); /* suggest by RFSI Binson */
-
+	for (cnt = 0; cnt < 5; cnt++) {
+		if (odm_get_rf_reg(dm, RF_PATH_A, RF_CHNLBW, 0x8000) != 0x1)
+			break;
+		ODM_delay_ms(10);
+	}
+	if (cnt == 5)
+		RF_DBG(dm, DBG_RF_LCK, "LCK time out\n");
+	odm_set_rf_reg(dm, RF_PATH_A, RF_CHNLBW, RFREGOFFSETMASK, lc_cal);
 	/* Leave LCK mode */
 	tmp = odm_get_rf_reg(dm, RF_PATH_A, RF_LCK, RFREGOFFSETMASK);
 	odm_set_rf_reg(dm, RF_PATH_A, RF_LCK, RFREGOFFSETMASK, tmp & ~BIT(14));

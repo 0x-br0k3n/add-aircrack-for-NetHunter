@@ -1215,7 +1215,7 @@ _phy_lc_calibrate_8812a(
 	boolean		is2T
 )
 {
-	u32	/*rf_amode=0, rf_bmode=0,*/ lc_cal = 0, tmp = 0;
+	u32	/*rf_amode=0, rf_bmode=0,*/ lc_cal = 0, tmp = 0, cnt;
 
 	/* Check continuous TX and Packet TX */
 	u32	reg0x914 = odm_read_4byte(dm, REG_SINGLE_TONE_CONT_TX_JAGUAR);;
@@ -1253,9 +1253,15 @@ _phy_lc_calibrate_8812a(
 
 	/* 3 4. Set LC calibration begin bit15 */
 	odm_set_rf_reg(dm, RF_PATH_A, RF_CHNLBW, RFREGOFFSETMASK, lc_cal | 0x08000);
-
 	ODM_delay_ms(150);		/* suggest by RFSI Binson */
-
+	for (cnt = 0; cnt < 5; cnt++) {
+		if (odm_get_rf_reg(dm, RF_PATH_A, RF_CHNLBW, 0x8000) != 0x1)
+			break;
+		ODM_delay_ms(10);
+	}
+	if (cnt == 5)
+		RF_DBG(dm, DBG_RF_LCK, "LCK time out\n");
+	odm_set_rf_reg(dm, RF_PATH_A, RF_CHNLBW, RFREGOFFSETMASK, lc_cal);
 	/* Leave LCK mode */
 	tmp = odm_get_rf_reg(dm, RF_PATH_A, RF_LCK, RFREGOFFSETMASK);
 	odm_set_rf_reg(dm, RF_PATH_A, RF_LCK, RFREGOFFSETMASK, tmp & ~BIT(14));

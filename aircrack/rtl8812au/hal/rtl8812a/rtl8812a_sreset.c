@@ -49,15 +49,13 @@ void rtl8812_sreset_xmit_status_check(_adapter *padapter)
 			else {
 				diff_time = rtw_get_passing_time_ms(psrtpriv->last_tx_complete_time);
 				if (diff_time > 4000) {
-					u32 ability = 0;
 
 					/* padapter->Wifi_Error_Status = WIFI_TX_HANG; */
-					ability = rtw_phydm_ability_get(padapter);
-
 					RTW_INFO("%s tx hang %s\n", __FUNCTION__,
-						(ability & ODM_BB_ADAPTIVITY) ? "ODM_BB_ADAPTIVITY" : "");
+						!adapter_to_rfctl(padapter)->adaptivity_en ? "" :
+							rtw_edcca_mode_str(rtw_get_edcca_mode(adapter_to_dvobj(padapter), pHalData->current_band_type)));
 
-					if (!(ability & ODM_BB_ADAPTIVITY))
+					if (!adapter_to_rfctl(padapter)->adaptivity_en)
 						rtw_hal_sreset_reset(padapter);
 				}
 			}
